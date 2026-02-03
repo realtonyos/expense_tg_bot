@@ -29,7 +29,6 @@ def main():
     application.add_handler(CommandHandler('add', command_handlers.add))
     application.add_handler(CommandHandler('today', command_handlers.today))
     application.add_handler(CommandHandler('month', command_handlers.month))
-    application.add_handler(CommandHandler('stats', command_handlers.stats))
 
     # Register message handlers
     application.add_handler(MessageHandler(
