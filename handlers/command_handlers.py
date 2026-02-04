@@ -1,6 +1,10 @@
 import logging
 
+from telegram import Update
+from telegram.ext import ContextTypes
+
 from config import texts
+from config.categories import DEFAULT_CATEGORIES
 from database import (
     get_or_create_user,
     add_expense,
@@ -8,15 +12,20 @@ from database import (
     get_month_expenses
 )
 from utils.logger_decorator import log_command
+from utils.formatter import format_expenses
+from keyboards.reply import (
+    get_main_keyboard,
+    get_hide_keyboard
+)
 
 
 logger = logging.getLogger(__name__)
 
 
 @log_command
-async def start(update, context):
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     '''
-    Starting interaction with the bot. 
+    Starting interaction with the bot.
     The bot receives information about the user and adds it to the database.
     '''
     user = update.effective_user
@@ -27,12 +36,13 @@ async def start(update, context):
     )
     await update.message.reply_text(
         texts.START_MESSAGE.format(first_name=user.first_name),
+        reply_markup=get_main_keyboard(),
         parse_mode="HTML"
     )
 
 
 @log_command
-async def help(update, context):
+async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     '''
     A function for outputting all the commands of the bot.
     '''
@@ -43,7 +53,7 @@ async def help(update, context):
 
 
 @log_command
-async def add(update, context):
+async def add(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     '''
     Function to add user expenses to the database.
     Accepts /add sum category. Parse sum and category
@@ -91,7 +101,7 @@ async def add(update, context):
 
     # Save in DB
     try:
-        expense_id = add_expense(
+        add_expense(
             user_id=user.id,
             amount=amount,
             category=category,
@@ -107,54 +117,72 @@ async def add(update, context):
 
 
 @log_command
-async def today(update, context):
+async def today(update: Update, context: ContextTypes.DEFAULT_TYPE):
     '''
-    A function for displaying expenses for today.
+    A function for displaying expenses for day.
     Information is taken for each user from the database.
     '''
     user = update.effective_user
-
-    # Get expenses from DB
     expenses = get_today_expenses(user.id)
-
-    # Format
     if not expenses:
-        await update.message.reply_text("Сегодня ещё нет расходов")
+        await update.message.reply_text("За сегодня расходов нет.")
         return
-
-    total = sum(e['amount'] for e in expenses)
-    lines = [f"<b>Расходы за сегодня:</b>\n"]
-
-    for exp in expenses:
-        desc = f" — {exp['description']}" if exp['description'] else ""
-        lines.append(f"• {exp['amount']} руб. ({exp['category']}){desc}")
-
-    lines.append(f"\n<b>Итого: {total} руб.</b>")
-
-    await update.message.reply_text("\n".join(lines), parse_mode="HTML")
+    response = format_expenses(
+        data=expenses,
+        title="Расходы за сегодня",
+        mode="list"  # или "auto"
+    )
+    await update.message.reply_text(response, parse_mode="HTML")
 
 
 @log_command
-async def month(update, context):
+async def month(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     '''
     A function for displaying expenses for month.
     Information is taken for each user from the database.
     '''
     user = update.effective_user
-
     stats = get_month_expenses(user.id)
-
     if not stats:
         await update.message.reply_text("В этом месяце ещё нет расходов.")
         return
+    response = format_expenses(
+        data=stats,
+        title="Статистика за месяц",
+        mode="stats"  # или "auto"
+    )
+    await update.message.reply_text(response, parse_mode="HTML")
 
-    response = ["📊 <b>Статистика за месяц:</b>\n"]
-    for item in stats:
-        response.append(
-            f"• {item['category']}: {item['total']} руб. ({item['count']} раз)"
-        )
 
-    total = sum(item['total'] for item in stats)
-    response.append(f"\n<b>Общая сумма: {total} руб.</b>")
+@log_command
+async def show_categories(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Command /categories - show available categories"""
+    lines = ["📂 <b>Доступные категории:</b>\n"]
 
-    await update.message.reply_text("\n".join(response), parse_mode="HTML")
+    for category, data in DEFAULT_CATEGORIES.items():
+        if data["default"]:  # только дефолтные
+            lines.append(f"{data['emoji']} {category} — {data['description']}")
+
+    lines.append(
+        "\n💡 <i>Используйте любую категорию при добавлении расхода</i>"
+    )
+
+    await update.message.reply_text("\n".join(lines), parse_mode="HTML")
+
+
+@log_command
+async def show_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Command /menu — show keyboard"""
+    await update.message.reply_text(
+        "Основное меню:",
+        reply_markup=get_main_keyboard()
+    )
+
+
+@log_command
+async def hide_keyboard(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Command /hide — hide the keyboard"""
+    await update.message.reply_text(
+        "Клавиатура скрыта. Используйте /menu чтобы вернуть.",
+        reply_markup=get_hide_keyboard()
+    )

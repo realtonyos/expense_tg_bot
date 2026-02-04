@@ -1,11 +1,10 @@
 import logging
-from telegram import Update
+
 from telegram.ext import (
     filters,
     MessageHandler,
     ApplicationBuilder,
     CommandHandler,
-    ContextTypes
 )
 
 from config.config import TOKEN
@@ -29,6 +28,9 @@ def main():
     application.add_handler(CommandHandler('add', command_handlers.add))
     application.add_handler(CommandHandler('today', command_handlers.today))
     application.add_handler(CommandHandler('month', command_handlers.month))
+    application.add_handler(CommandHandler('category', command_handlers.show_categories))
+    application.add_handler(CommandHandler('menu', command_handlers.show_menu))
+    application.add_handler(CommandHandler('hide', command_handlers.hide_keyboard))
 
     # Register message handlers
     application.add_handler(MessageHandler(
