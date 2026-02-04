@@ -31,6 +31,6 @@ print("\nРасходы:")
 cursor.execute("SELECT * FROM expenses;")
 expenses = cursor.fetchall()
 for exp in expenses:
-    print(f"  ID: {exp[0]}, User: {exp[1]}, Сумма: {exp[2]}, Категория: {exp[3]}")
+    print(f"ID:{exp[0]}, User: {exp[1]}, Сумма: {exp[2]}, Категория: {exp[3]}")
 
 conn.close()

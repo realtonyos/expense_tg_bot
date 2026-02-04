@@ -1,12 +1,19 @@
-from config.texts import START_MESSAGE, HELP_MESSAGE
+import logging
+
+from config import texts
 from database import (
     get_or_create_user,
     add_expense,
     get_today_expenses,
     get_month_expenses
 )
+from utils.logger_decorator import log_command
 
 
+logger = logging.getLogger(__name__)
+
+
+@log_command
 async def start(update, context):
     '''
     Starting interaction with the bot. 
@@ -19,21 +26,23 @@ async def start(update, context):
         first_name=user.first_name
     )
     await update.message.reply_text(
-        START_MESSAGE.format(first_name=user.first_name),
+        texts.START_MESSAGE.format(first_name=user.first_name),
         parse_mode="HTML"
     )
 
 
+@log_command
 async def help(update, context):
     '''
     A function for outputting all the commands of the bot.
     '''
     await update.message.reply_text(
-        HELP_MESSAGE,
+        texts.HELP_MESSAGE,
         parse_mode="HTML"
     )
 
 
+@log_command
 async def add(update, context):
     '''
     Function to add user expenses to the database.
@@ -41,32 +50,63 @@ async def add(update, context):
     And save it in DB.
     '''
     user = update.effective_user
-    get_or_create_user(user.id, user.username, user.first_name)
-    
-    # Parse /add sum category
-    if len(context.args) < 2:
-        await update.message.reply_text("Формат: /add <сумма> <категория>")
+    # Register user
+    try:
+        get_or_create_user(user.id, user.username, user.first_name)
+    except Exception as e:
+        logger.error(f"DB error while registering user {user.id}: {e}")
+        await update.message.reply_text(texts.ERROR_DB_CONNECTION)
         return
 
-    try:
-        amount = float(context.args[0])
-        category = context.args[1]
-        description = " ".join(context.args[2:]) if len(context.args) > 2 else None
-    except ValueError:
-        await update.message.reply_text("Сумма должна быть числом!")
+    # Parse /add sum category
+    # Check for arguments
+    if not context.args or len(context.args) < 2:
+        await update.message.reply_text(texts.ERROR_INVALID_FORMAT)
         return
+
+    # Valid amount
+    amount_text = context.args[0]
+    try:
+        amount = float(amount_text.replace(',', '.'))
+    except ValueError:
+        await update.message.reply_text(texts.ERROR_NOT_A_NUMBER)
+        return
+
+    if amount <= 0 or amount >= 1_000_000:
+        await update.message.reply_text(texts.ERROR_INVALID_NUMBER)
+        return
+
+    # Valid category
+    category = context.args[1].strip()
+    if len(category) > 50 or len(category) < 2:
+        await update.message.reply_text(texts.ERROR_INVALID_CATEGORY)
+        return
+
+    # Get a description
+    description = None
+    if len(context.args) > 2:
+        description = ' '.join(context.args[2:])
+        if len(description) > 200:
+            description = description[:197] + "..."
 
     # Save in DB
-    expense_id = add_expense(
-        user_id=user.id,
-        amount=amount,
-        category=category,
-        description=description
-    )
+    try:
+        expense_id = add_expense(
+            user_id=user.id,
+            amount=amount,
+            category=category,
+            description=description
+        )
 
-    await update.message.reply_text(f"Расход {amount} на '{category}' сохранён!")
+        await update.message.reply_text(
+            f"Расход {amount} на '{category}' сохранён!"
+        )
+    except Exception as e:
+        logger.error(f"DB error while adding expense for user {user.id}: {e}")
+        await update.message.reply_text(texts.ERROR_DB_CONNECTION)
 
 
+@log_command
 async def today(update, context):
     '''
     A function for displaying expenses for today.
@@ -94,6 +134,7 @@ async def today(update, context):
     await update.message.reply_text("\n".join(lines), parse_mode="HTML")
 
 
+@log_command
 async def month(update, context):
     '''
     A function for displaying expenses for month.
@@ -117,4 +158,3 @@ async def month(update, context):
     response.append(f"\n<b>Общая сумма: {total} руб.</b>")
 
     await update.message.reply_text("\n".join(response), parse_mode="HTML")
-    

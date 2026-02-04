@@ -7,7 +7,7 @@ All user responses are collected here for easy editing.
 START_MESSAGE = """
 Привет, {first_name}!
 
-Я бот для учёта расходов. 
+Я бот для учёта расходов.
 Я помогу вам отслеживать, на что уходят деньги.
 
 <b>Основные команды:</b>
@@ -45,7 +45,13 @@ HELP_MESSAGE = """
 ERROR_INVALID_FORMAT = "Неверный формат. Используйте: /add <сумма> <категория>"
 ERROR_DB_CONNECTION = "Ошибка подключения к базе данных. Попробуйте позже."
 ERROR_NOT_A_NUMBER = "Сумма должна быть числом!"
-
+ERROR_INVALID_NUMBER = """
+    Сумма слишком большая или слишком маленькая", проверьте еще раз!
+"""
+ERROR_INVALID_CATEGORY = """
+    Категория слишком длинная (макс. 50 символов).\n
+    Используйте более короткое название.
+"""
 
 # General answers
 WELCOME_BACK = "С возвращением, {first_name}!"
