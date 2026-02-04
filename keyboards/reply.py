@@ -1,30 +1,25 @@
-"""
-Reply-keyboards for quick access to commands.
-"""
+"""Reply keyboards for quick access to commands."""
 
 from telegram import ReplyKeyboardMarkup, KeyboardButton
 
+from config.texts import texts
+
 
 def get_main_keyboard() -> ReplyKeyboardMarkup:
-    """
-    The main keyboard with two buttons.
-    Appears below the message input field.
-    """
+    """Main keyboard with two buttons."""
     keyboard = [
-        [KeyboardButton("➕ Добавить расход")],
-        [KeyboardButton("📂 Категории")]
+        [KeyboardButton(texts.buttons.ADD_EXPENSE)],
+        [KeyboardButton(texts.buttons.CATEGORIES)],
     ]
 
     return ReplyKeyboardMarkup(
         keyboard,
-        resize_keyboard=True,  # The buttons adjust to the size
-        one_time_keyboard=False,  # The keyboard stays on all the time
-        input_field_placeholder="Выберите действие..."  # Hint in input field
+        resize_keyboard=True,
+        one_time_keyboard=False,
+        input_field_placeholder="Выберите действие...",
     )
 
 
 def get_hide_keyboard() -> ReplyKeyboardMarkup:
-    """
-    An empty keyboard to hide the current one.
-    """
+    """Empty keyboard to hide the current one."""
     return ReplyKeyboardMarkup([[]], resize_keyboard=True)

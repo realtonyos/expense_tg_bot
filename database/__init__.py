@@ -1,3 +1,5 @@
+"""Database module initialization."""
+
 from .crud import (
     get_or_create_user,
     update_user_settings,
@@ -5,8 +7,8 @@ from .crud import (
     add_expense,
     get_today_expenses,
     get_month_expenses,
-    init_database
+    init_database,
 )
 
-# Инициализация БД при импорте
+# Database initialization on import
 init_database()

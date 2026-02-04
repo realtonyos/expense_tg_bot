@@ -1,9 +1,11 @@
+"""Message formatters for the bot."""
+
 from config.currencies import get_currency_settings
 from config.categories import get_category_emoji
 
 
 def format_currency(amount: float, currency_code: str = "RUB") -> str:
-    """Formats the amount based on the currency"""
+    """Format amount based on currency settings."""
     settings = get_currency_settings(currency_code)
     formatted = f"{amount:,.2f}"
 
@@ -18,10 +20,15 @@ def format_currency(amount: float, currency_code: str = "RUB") -> str:
     return f"{formatted} {settings['symbol']}"
 
 
-def format_expense(amount: float, category: str, description: str = None,
-                   expense_id: int = None, date: str = None,
-                   currency: str = "RUB") -> str:
-    """Formats a single expense"""
+def format_expense(
+    amount: float,
+    category: str,
+    description: str = None,
+    expense_id: int = None,
+    date: str = None,
+    currency: str = "RUB",
+) -> str:
+    """Format single expense."""
     emoji = get_category_emoji(category)
     parts = [f"{emoji} {format_currency(amount, currency)} • {category}"]
 
@@ -35,53 +42,49 @@ def format_expense(amount: float, category: str, description: str = None,
     return "".join(parts)
 
 
-def format_expenses(
-    data: list,
-    title: str = "Расходы",
-    mode: str = "list"
-) -> str:
+def format_expenses(data: list,
+                    title: str = "Расходы", mode: str = "list") -> str:
     """
-    Universal formatter for any periods
+    Universal formatter for any periods.
 
     Args:
         data: List of expenses OR statistics
-        title: Title ("Today's expenses", "Monthly statistics")
-        mode: Mode:
-        - "list": list of expenses (for /today)
-        - "stats": category statistics (for /month)
-        - "auto": automatically detects the data structure
+        title: Title
+        mode:
+            "list" for expenses,
+            "stats" for statistics,
+            "auto" for auto-detect
     """
     if not data:
         return f"📭 <b>{title}</b>\nПока ничего нет."
 
     if mode == "auto":
-        if data and 'total' in data[0] and 'count' in data[0]:
+        if data and "total" in data[0] and "count" in data[0]:
             mode = "stats"
         else:
             mode = "list"
 
     if mode == "list":
         return _format_list(data, title)
-    else:  # mode == "stats"
+    else:
         return _format_stats(data, title)
 
 
 def _format_list(expenses: list, title: str) -> str:
-    """Auxiliary: list of expenses"""
-    total = sum(exp.get('amount', 0) for exp in expenses)
+    """Format list of expenses."""
+    total = sum(exp.get("amount", 0) for exp in expenses)
     lines = [f"📋 <b>{title}:</b>\n"]
 
     for i, exp in enumerate(expenses, 1):
-        amount = exp.get('amount', 0)
-        category = exp.get('category', 'другое')
-        description = exp.get('description')
-        expense_id = exp.get('id')
-        date = exp.get('date')
+        amount = exp.get("amount", 0)
+        category = exp.get("category", "другое")
+        description = exp.get("description")
+        expense_id = exp.get("id")
+        date = exp.get("date")
 
         expense_str = format_expense(
-            amount, category,
-            description, expense_id, date
-            )
+            amount, category, description, expense_id, date,
+        )
         lines.append(f"{i}. {expense_str}")
 
     lines.append(f"\n<b>Итого: {format_currency(total)}</b>")
@@ -89,16 +92,16 @@ def _format_list(expenses: list, title: str) -> str:
 
 
 def _format_stats(stats: list, title: str) -> str:
-    """Auxiliary: statistics by category"""
-    total_all = sum(item.get('total', 0) for item in stats)
-    sorted_stats = sorted(stats, key=lambda x: x.get('total', 0), reverse=True)
+    """Format statistics by category."""
+    total_all = sum(item.get("total", 0) for item in stats)
+    sorted_stats = sorted(stats, key=lambda x: x.get("total", 0), reverse=True)
 
     lines = [f"📊 <b>{title}:</b>\n"]
 
     for item in sorted_stats:
-        category = item.get('category', 'другое')
-        total = item.get('total', 0)
-        count = item.get('count', 0)
+        category = item.get("category", "другое")
+        total = item.get("total", 0)
+        count = item.get("count", 0)
 
         percentage = (total / total_all * 100) if total_all > 0 else 0
         bar_length = 10
